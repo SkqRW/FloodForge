@@ -84,7 +84,10 @@ void FloodForgeWindow::updateCamera() {
 	cameraPanTo.y += previousWorldMouse.y - worldMouse.y;
 
 	//// Panning
-	if (UI::mouse.middleMouse) {
+	// Allow panning with middle mouse OR Ctrl+left mouse
+	bool panningMouse = UI::mouse.middleMouse || (UI::mouse.leftMouse && UI::window->modifierPressed(GLFW_MOD_CONTROL));
+	
+	if (panningMouse) {
 		if (!cameraPanningBlocked && !cameraPanning) {
 			if (isHoveringPopup) cameraPanningBlocked = true;
 
@@ -111,7 +114,10 @@ void FloodForgeWindow::updateCamera() {
 }
 
 void FloodForgeWindow::updateOriginalControls() {
-	if (UI::mouse.leftMouse) {
+	// Don't process left mouse selection if we're panning with Ctrl+LeftMouse
+	bool isCtrlPanning = UI::mouse.leftMouse && UI::window->modifierPressed(GLFW_MOD_CONTROL);
+	
+	if (UI::mouse.leftMouse && !isCtrlPanning) {
 		if (!UI::mouse.lastLeftMouse) {
 			if (EditorState::selectingState == 0) {
 				for (auto it = EditorState::rooms.rbegin(); it != EditorState::rooms.rend(); it++) {
@@ -221,7 +227,10 @@ void FloodForgeWindow::updateOriginalControls() {
 }
 
 void FloodForgeWindow::updateFloodForgeControls() {
-	if (UI::mouse.leftMouse) {
+	// Don't process left mouse selection if we're panning with Ctrl+LeftMouse
+	bool isCtrlPanning = UI::mouse.leftMouse && UI::window->modifierPressed(GLFW_MOD_CONTROL);
+	
+	if (UI::mouse.leftMouse && !isCtrlPanning) {
 		if (!UI::mouse.lastLeftMouse) {
 			if (EditorState::selectingState == 0) {
 				for (auto it = EditorState::rooms.rbegin(); it != EditorState::rooms.rend(); it++) {
