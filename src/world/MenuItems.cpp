@@ -20,8 +20,10 @@ std::vector<Button*> MenuItems::layerButtons;
 int MenuItems::currentLayer = MENU_LAYER_FLOOD_FORGE;
 
 double MenuItems::currentButtonX = 0.01;
+double MenuItems::currentButtonXRight = 0.01;
 
-Button::Button(std::string text, Rect rect, int layer) : rect(rect), text(text), layer(layer) {
+Button::Button(std::string text, Rect rect, int layer, ButtonAlignment alignment) 
+	: rect(rect), text(text), layer(layer), alignment(alignment) {
 	Text(text);
 }
 
@@ -30,11 +32,26 @@ Button *Button::OnPress(std::function<void(Button*)> listener) {
 	return this;
 }
 
+Button *Button::SetAlignment(ButtonAlignment align) {
+	this->alignment = align;
+	return this;
+}
+
 void Button::draw() {
 	UI::TextButtonMods mods = UI::TextButtonMods();
 	if (darken) mods.TextColor(currentTheme[ThemeColour::TextDisabled]);
 
-	if (UI::TextButton(Rect(rect.x0 - UI::screenBounds.x, rect.y0 + UI::screenBounds.y, rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
+	if(this->alignment == ButtonAlignment::RIGHT){
+		if (UI::TextButton(Rect(rect.x0 - UI::screenBounds.x, rect.y0 + UI::screenBounds.y, 
+								rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
+			listener(this);
+		}
+		Logger::info("Button Position X: ", rect.x0, " - ", rect.x1);
+		return;
+	}
+
+	if (UI::TextButton(Rect(rect.x0 - UI::screenBounds.x, rect.y0 + UI::screenBounds.y, 
+							rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
 		listener(this);
 	}
 }
@@ -81,10 +98,12 @@ Room *copyRoom(std::filesystem::path fromFile, std::filesystem::path toFile) {
 }
 
 
-Button &MenuItems::addButton(std::string text, int layer) {
-	Button *button = new Button(text, Rect::fromSize(currentButtonX, -0.05, 0.0, 0.04), layer);
+Button &MenuItems::addButton(std::string text, int layer, ButtonAlignment alignment = ButtonAlignment::LEFT) {
+	Button *button = new Button(text, Rect::fromSize(currentButtonX, -0.05, 0.0, 0.04), layer, alignment);
+
 	currentButtonX = button->rect.x1 + 0.01;
 	buttons.push_back(button);
+
 	return *button;
 }
 
@@ -304,7 +323,7 @@ void MenuItems::initFloodForge() {
 		}
 	);
 
-	addButton("Canon", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("Canon", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::RIGHT).OnPress(
 		[](Button *button) {
 			if (EditorState::roomPositionType == CANON_POSITION) {
 				EditorState::roomPositionType = DEV_POSITION;
@@ -326,6 +345,11 @@ void MenuItems::initFloodForge() {
 	// 		Popups::addPopup(new ChangeAcronymPopup(window));
 	// 	}
 	// );
+
+	addButton("INFO?", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::RIGHT)
+		.OnPress([](Button *button) {
+			Popups::addPopup(new MarkdownPopup(BASE_PATH / "docs" / "controls.md"));
+		});
 }
 
 void MenuItems::initDroplet() {
@@ -356,7 +380,6 @@ void MenuItems::cleanup() {
 	for (Button *button : buttons) {
 		delete button;
 	}
-
 	buttons.clear();
 }
 
@@ -386,17 +409,29 @@ void MenuItems::draw() {
 
 		button->draw();
 	}
+
 }
 
 void MenuItems::repositionButtons() {
 	currentButtonX = 0.01;
+	currentButtonXRight = 2 * UI::screenBounds.x - 0.01;
 
 	for (Button *button : buttons) {
+		// Solo procesar botones de la capa actual
 		if (button->layer != currentLayer) continue;
+		
+		if (button->alignment == ButtonAlignment::LEFT) {
+			
+			button->rect.x1 = button->rect.x1 - button->rect.x0 + currentButtonX;
+			button->rect.x0 = currentButtonX;
+			currentButtonX = button->rect.x1 + 0.01;
+		} else 
+		
+		if (button->alignment == ButtonAlignment::RIGHT) {
 
-		button->rect.x1 = button->rect.x1 - button->rect.x0 + currentButtonX;
-		button->rect.x0 = currentButtonX;
-
-		currentButtonX = button->rect.x1 + 0.01;
+			button->rect.x0 = currentButtonXRight - button->rect.x1 + button->rect.x0;
+			button->rect.x1 = currentButtonXRight;
+			currentButtonXRight = button->rect.x0 - 0.01;
+		}
 	}
 }
