@@ -20,7 +20,7 @@ std::vector<Button*> MenuItems::layerButtons;
 int MenuItems::currentLayer = MENU_LAYER_FLOOD_FORGE;
 
 double MenuItems::currentButtonX = 0.01;
-double MenuItems::currentButtonXRight = 0.01;
+double MenuItems::currentButtonXRight = 2 * UI::screenBounds.x - 0.01;
 
 Button::Button(std::string text, Rect rect, int layer, ButtonAlignment alignment) 
 	: rect(rect), text(text), layer(layer), alignment(alignment) {
@@ -46,7 +46,6 @@ void Button::draw() {
 								rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
 			listener(this);
 		}
-		Logger::info("Button Position X: ", rect.x0, " - ", rect.x1);
 		return;
 	}
 
@@ -99,6 +98,16 @@ Room *copyRoom(std::filesystem::path fromFile, std::filesystem::path toFile) {
 
 
 Button &MenuItems::addButton(std::string text, int layer, ButtonAlignment alignment = ButtonAlignment::LEFT) {
+
+	if(alignment == ButtonAlignment::RIGHT){
+		Button *button = new Button(text, Rect::fromSize(currentButtonXRight - (button->rect.x1 - button->rect.x0) - 0.01, -0.05, 0.0, 0.04), layer, alignment);
+		currentButtonXRight = 2 * UI::screenBounds.x - button->rect.x0 - 0.01;
+		buttons.push_back(button);
+		Logger::info("Button Position X: ", button->rect.x0, " - ", button->rect.x1);
+		return *button;
+	}
+
+
 	Button *button = new Button(text, Rect::fromSize(currentButtonX, -0.05, 0.0, 0.04), layer, alignment);
 
 	currentButtonX = button->rect.x1 + 0.01;
@@ -147,13 +156,13 @@ void MenuItems::init() {
 }
 
 void MenuItems::initFloodForge() {
-	addButton("New", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("New", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			Popups::addPopup(new AcronymPopup());
 		}
 	);
 
-	addButton("Add Room", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("Add Room", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			if (EditorState::region.acronym == "") {
 				Popups::addPopup(new InfoPopup("You must create or import a region\nbefore adding rooms."));
@@ -227,7 +236,7 @@ void MenuItems::initFloodForge() {
 		}
 	);
 
-	addButton("Import", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("Import", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			Popups::addPopup(new FilesystemPopup(std::regex("world_([^._-]+)\\.txt", std::regex_constants::icase), "world_xx.txt",
 				[](std::set<std::filesystem::path> paths) {
@@ -285,7 +294,7 @@ void MenuItems::initFloodForge() {
 		}
 	);
 
-	addButton("No Colours", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("No Colours", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			EditorState::roomColours = (EditorState::roomColours + 1) % 3;
 
@@ -305,14 +314,14 @@ void MenuItems::initFloodForge() {
 		addLayerButton(std::to_string(i + 1), i, MENU_LAYER_FLOOD_FORGE);
 	}
 
-	addButton("Dev Items: Hidden", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("Dev Items: Hidden", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			EditorState::visibleDevItems = !EditorState::visibleDevItems;
 			button->Text(EditorState::visibleDevItems ? "Dev Items: Shown" : "Dev Items: Hidden");
 		}
 	);
 
-	addButton("Refresh Region", MENU_LAYER_FLOOD_FORGE).OnPress(
+	addButton("Refresh Region", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			if (EditorState::region.acronym.empty() || EditorState::region.exportDirectory.empty()) {
 				Popups::addPopup(new InfoPopup("You must create or import a region\nbefore refreshing"));
@@ -323,7 +332,7 @@ void MenuItems::initFloodForge() {
 		}
 	);
 
-	addButton("Canon", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::RIGHT).OnPress(
+	addButton("Canon", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::LEFT).OnPress(
 		[](Button *button) {
 			if (EditorState::roomPositionType == CANON_POSITION) {
 				EditorState::roomPositionType = DEV_POSITION;
@@ -346,7 +355,8 @@ void MenuItems::initFloodForge() {
 	// 	}
 	// );
 
-	addButton("INFO?", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::RIGHT)
+	// Tutorial 
+	addButton(" ? ", MENU_LAYER_FLOOD_FORGE, ButtonAlignment::RIGHT)
 		.OnPress([](Button *button) {
 			Popups::addPopup(new MarkdownPopup(BASE_PATH / "docs" / "controls.md"));
 		});
@@ -417,21 +427,25 @@ void MenuItems::repositionButtons() {
 	currentButtonXRight = 2 * UI::screenBounds.x - 0.01;
 
 	for (Button *button : buttons) {
-		// Solo procesar botones de la capa actual
 		if (button->layer != currentLayer) continue;
-		
 		if (button->alignment == ButtonAlignment::LEFT) {
 			
 			button->rect.x1 = button->rect.x1 - button->rect.x0 + currentButtonX;
 			button->rect.x0 = currentButtonX;
 			currentButtonX = button->rect.x1 + 0.01;
-		} else 
-		
+		}
+	}
+
+	// For right buttons, i have to go backwards so they don't be in reverse order
+	for (int i=buttons.size()-1; i>=0; i--) {
+		Button *button = buttons[i];
+		if (button->layer != currentLayer) continue;
 		if (button->alignment == ButtonAlignment::RIGHT) {
 
-			button->rect.x0 = currentButtonXRight - button->rect.x1 + button->rect.x0;
+			button->rect.x0 = currentButtonXRight - (button->rect.x1 - button->rect.x0);
 			button->rect.x1 = currentButtonXRight;
 			currentButtonXRight = button->rect.x0 - 0.01;
+			Logger::info("Button Position X: ", button->rect.x0, " - ", button->rect.x1);
 		}
 	}
 }
