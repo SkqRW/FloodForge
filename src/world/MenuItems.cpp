@@ -21,7 +21,10 @@ std::vector<Button*> MenuItems::layerButtons;
 int MenuItems::currentLayer = MENU_LAYER_FLOOD_FORGE;
 
 double MenuItems::currentButtonX = 0.01;
-double MenuItems::currentButtonXRight = 2 * UI::screenBounds.x - 0.01;
+double MenuItems::currentButtonXRight = 2 * 1 - 0.01; // Screen bound don't define when this is initialized, so just assume 1 for now.
+
+double MenuItems::lastWindowWidth = 0.0;
+double MenuItems::lastWindowHeight = 0.0;
 
 Button::Button(std::string text, Rect rect, int layer, ButtonAlignment alignment) : rect(rect), text(text), layer(layer), alignment(alignment) {
 	Text(text);
@@ -41,17 +44,11 @@ void Button::draw() {
 	UI::TextButtonMods mods = UI::TextButtonMods();
 	if (darken) mods.TextColor(currentTheme[ThemeColour::TextDisabled]);
 
-	if(this->alignment == ButtonAlignment::RIGHT){
-		if (UI::TextButton(Rect(rect.x0 - UI::screenBounds.x, rect.y0 + UI::screenBounds.y, 
-								rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
-			listener(this);
-		}
-		return;
-	}
-
 	if (UI::TextButton(Rect(rect.x0 - UI::screenBounds.x, rect.y0 + UI::screenBounds.y, rect.x1 - UI::screenBounds.x, rect.y1 + UI::screenBounds.y), text, mods)) {
 		listener(this);
 	}
+
+	
 }
 
 void Button::Text(const std::string text) {
@@ -418,6 +415,18 @@ void MenuItems::setLayer(int layer) {
 
 	currentLayer = layer;
 	repositionButtons();
+}
+
+void MenuItems::checkWindowResize() {
+	double currentWidth = 2 * UI::screenBounds.x;
+	double currentHeight = 2 * UI::screenBounds.y;
+
+	if (lastWindowWidth != currentWidth || lastWindowHeight != currentHeight) {
+		lastWindowWidth = currentWidth;
+		lastWindowHeight = currentHeight;
+
+		repositionButtons();
+	}
 }
 
 void MenuItems::draw() {

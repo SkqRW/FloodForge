@@ -75,6 +75,8 @@ class MenuItems {
 
 		static void setLayer(int layer);
 
+		static void checkWindowResize();
+
 	private:
 		static void repositionButtons();
 
@@ -84,4 +86,7 @@ class MenuItems {
 		static double currentButtonX;
 		static double currentButtonXRight;
 		static int currentLayer;
+
+		static double lastWindowWidth;
+		static double lastWindowHeight;
 };
