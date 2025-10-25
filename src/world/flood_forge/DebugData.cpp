@@ -1,5 +1,5 @@
 #include "DebugData.hpp"
-#include "UndoRedo.hpp"
+#include "../undo_redo/UndoRedoManager.hpp"
 
 namespace DebugData {
 	void draw(Window *window, Vector2 mouse, Vector2 screenBounds) {

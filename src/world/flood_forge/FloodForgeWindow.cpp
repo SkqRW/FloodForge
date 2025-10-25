@@ -8,7 +8,8 @@
 #include "../Globals.hpp"
 #include "../../ui/UI.hpp"
 #include "DebugData.hpp"
-#include "UndoRedo.hpp"
+#include "../undo_redo/UndoRedoManager.hpp"
+#include "../undo_redo/RoomPositionAction.hpp"
 
 #include "../../popup/MarkdownPopup.hpp"
 #include "../../popup/ConfirmPopup.hpp"
@@ -44,8 +45,7 @@ bool FloodForgeWindow::currentConnectionValid = false;
 std::string FloodForgeWindow::connectionError = "";
 FloodForgeWindow::ConnectionState FloodForgeWindow::connectionState = FloodForgeWindow::ConnectionState::None;
 
-// Variables for undo/redo system
-static bool roomSnapshotSaved = false;
+static bool roomSnapshotSaved = false; // Only take snapshot once per drag
 static std::map<Room*, UndoRedo::RoomPositionData> roomBeforePositions;
 
 void FloodForgeWindow::initUndoRedo() {
@@ -157,7 +157,6 @@ void FloodForgeWindow::updateOriginalControls() {
 				if (EditorState::selectingState == 3) {
 					// Save snapshot BEFORE starting to move rooms
 					if (!roomSnapshotSaved) {
-						roomBeforePositions.clear();
 						for (Room* room : EditorState::selectedRooms) {
 							roomBeforePositions[room] = UndoRedo::RoomPositionData(
 								room->canonPosition, 
@@ -171,6 +170,7 @@ void FloodForgeWindow::updateOriginalControls() {
 								EditorState::roomPossibleSelect->devPosition
 							);
 						}
+						// Save only one time per drag
 						roomSnapshotSaved = true;
 					}
 					
@@ -250,7 +250,7 @@ void FloodForgeWindow::updateOriginalControls() {
 					room->devPosition
 				);
 			}
-			UndoRedo::pushRoomPositionSnapshot(roomBeforePositions, afterPositions, "Move Rooms");
+					UndoRedo::pushRoomPositionSnapshot(roomBeforePositions, afterPositions, UndoRedo::RoomPositionActionType::MoveRooms);
 			roomBeforePositions.clear();
 		}
 
@@ -381,7 +381,7 @@ void FloodForgeWindow::updateFloodForgeControls() {
 					room->devPosition
 				);
 			}
-			UndoRedo::pushRoomPositionSnapshot(roomBeforePositions, afterPositions, "Move Rooms");
+					UndoRedo::pushRoomPositionSnapshot(roomBeforePositions, afterPositions, UndoRedo::RoomPositionActionType::MoveRooms);
 			roomBeforePositions.clear();
 		}
 
@@ -436,6 +436,7 @@ void FloodForgeWindow::updateMain() {
 	}
 
 	// Undo/Redo para la posición de las rooms
+	// TODO: Reval if i should move this into a more general funtion, later, i'm tired as saint pass ascencion
 	if (UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
 		if (UI::window->modifierPressed(GLFW_MOD_SHIFT) && UI::window->justPressed(GLFW_KEY_Z)) {
 			// Ctrl+Shift+Z: Redo
