@@ -110,7 +110,7 @@ void FloodForgeWindow::updateCamera() {
 	EditorState::cameraOffset.y += (cameraPanTo.y - EditorState::cameraOffset.y) * Settings::getSetting<double>(Settings::Setting::CameraPanSpeed);
 }
 
-void FloodForgeWindow::updateOriginalControls() {
+void FloodForgeWindow::updateControls(bool originalControls) {
 	if (UI::mouse.leftMouse) {
 		if (!UI::mouse.lastLeftMouse) {
 			if (EditorState::selectingState == 0) {
@@ -129,15 +129,25 @@ void FloodForgeWindow::updateOriginalControls() {
 			}
 
 			if (EditorState::selectingState == 0) {
-				if (UI::window->modifierPressed(GLFW_MOD_SHIFT)) {
+				if (originalControls){
+					if (UI::window->modifierPressed(GLFW_MOD_SHIFT)) {
+						EditorState::selectingState = 1;
+						selectionStart = worldMouse;
+						selectionEnd = worldMouse;
+						if (!UI::window->modifierPressed(GLFW_MOD_CONTROL)) EditorState::selectedRooms.clear();
+					} else {
+						EditorState::selectingState = 5;
+						selectionStart = EditorState::globalMouse;
+						selectionEnd = EditorState::globalMouse;
+					}
+				} else {
 					EditorState::selectingState = 1;
 					selectionStart = worldMouse;
 					selectionEnd = worldMouse;
-					if (!UI::window->modifierPressed(GLFW_MOD_CONTROL)) EditorState::selectedRooms.clear();
-				} else {
-					EditorState::selectingState = 5;
-					selectionStart = EditorState::globalMouse;
-					selectionEnd = EditorState::globalMouse;
+					if (!UI::window->modifierPressed(GLFW_MOD_SHIFT) && 
+					    !UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
+						EditorState::selectedRooms.clear();
+					}
 				}
 			}
 		} else {
@@ -176,9 +186,11 @@ void FloodForgeWindow::updateOriginalControls() {
 
 			if (EditorState::selectingState == 1) {
 				selectionEnd = worldMouse;
+				// In the custom one, there are this comment
+				// selectedRooms.clear();
 			}
 
-			if (EditorState::selectingState == 5) {
+			if (originalControls && EditorState::selectingState == 5) {
 				selectionEnd = EditorState::globalMouse;
 
 				cameraPanTo.x += (selectionStart.x - selectionEnd.x) * EditorState::cameraScale / 512;
@@ -213,104 +225,9 @@ void FloodForgeWindow::updateOriginalControls() {
 
 		if (EditorState::selectingState == 1) {
 			for (Room *room : EditorState::rooms) {
-				if (room->intersects(selectionStart, selectionEnd)) EditorState::selectedRooms.insert(room);
-			}
-		}
-		EditorState::selectingState = 0;
-	}
-}
-
-void FloodForgeWindow::updateFloodForgeControls() {
-	if (UI::mouse.leftMouse) {
-		if (!UI::mouse.lastLeftMouse) {
-			if (EditorState::selectingState == 0) {
-				for (auto it = EditorState::rooms.rbegin(); it != EditorState::rooms.rend(); it++) {
-					Room *room = *it;
-					if (!EditorState::visibleLayers[room->layer]) continue;
-
-					if (room->inside(worldMouse)) {
-						holdingRoom = room;
-						holdingStart = worldMouse;
-						EditorState::roomPossibleSelect = room;
-						EditorState::selectingState = 3;
-						break;
-					}
+				if (room->intersects(selectionStart, selectionEnd)) {
+					EditorState::selectedRooms.insert(room);
 				}
-			}
-
-			if (EditorState::selectingState == 0) {
-				EditorState::selectingState = 1;
-				selectionStart = worldMouse;
-				selectionEnd = worldMouse;
-				if (!UI::window->modifierPressed(GLFW_MOD_SHIFT) && !UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
-					EditorState::selectedRooms.clear();
-				}
-			}
-		} else {
-			if (EditorState::selectingState == 3 && UI::mouse.moved() || EditorState::selectingState == 4) {
-				if (EditorState::selectingState == 3) {
-					if (UI::window->modifierPressed(GLFW_MOD_SHIFT) || UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
-						EditorState::selectedRooms.insert(EditorState::roomPossibleSelect);
-					} else {
-						if (EditorState::selectedRooms.find(holdingRoom) == EditorState::selectedRooms.end()) {
-							EditorState::selectedRooms.clear();
-							EditorState::selectedRooms.insert(EditorState::roomPossibleSelect);
-						}
-					}
-					EditorState::rooms.erase(std::remove(EditorState::rooms.begin(), EditorState::rooms.end(), EditorState::roomPossibleSelect), EditorState::rooms.end());
-					EditorState::rooms.push_back(EditorState::roomPossibleSelect);
-					EditorState::selectingState = 4;
-				}
-
-				Vector2 offset = (worldMouse - holdingStart);
-				if (roomSnap == ROOM_SNAP_TILE) offset.round();
-
-				for (Room *room2 : EditorState::selectedRooms) {
-					Vector2 &roomPosition = room2->currentPosition();
-					if (roomSnap == ROOM_SNAP_TILE) {
-						roomPosition.round();
-					}
-
-					roomPosition.add(offset);
-					if (UI::window->modifierPressed(GLFW_MOD_ALT) || EditorState::positionType == PositionType::BOTH) {
-						room2->moveBoth();
-					}
-				}
-				holdingStart = holdingStart + offset;
-			}
-
-			if (EditorState::selectingState == 1) {
-				selectionEnd = worldMouse;
-				// selectedRooms.clear();
-			}
-		}
-	} else {
-		if (EditorState::selectingState == 3) {
-			EditorState::rooms.erase(std::remove(EditorState::rooms.begin(), EditorState::rooms.end(), EditorState::roomPossibleSelect), EditorState::rooms.end());
-			EditorState::rooms.push_back(EditorState::roomPossibleSelect);
-			if (UI::window->modifierPressed(GLFW_MOD_SHIFT) || UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
-				if (EditorState::selectedRooms.find(EditorState::roomPossibleSelect) != EditorState::selectedRooms.end()) {
-					EditorState::selectedRooms.erase(EditorState::roomPossibleSelect);
-				} else {
-					EditorState::selectedRooms.insert(EditorState::roomPossibleSelect);
-				}
-			} else {
-				EditorState::selectedRooms.clear();
-				EditorState::selectedRooms.insert(EditorState::roomPossibleSelect);
-			}
-			holdingType = 1;
-			if (roomSnap == ROOM_SNAP_TILE) {
-				for (Room *room2 : EditorState::selectedRooms) {
-					room2->currentPosition().round();
-				}
-			}
-		}
-
-		holdingRoom = nullptr;
-
-		if (EditorState::selectingState == 1) {
-			for (Room *room : EditorState::rooms) {
-				if (room->intersects(selectionStart, selectionEnd)) EditorState::selectedRooms.insert(room);
 			}
 		}
 		EditorState::selectingState = 0;
@@ -458,11 +375,9 @@ void FloodForgeWindow::updateMain() {
 	}
 
 	//// Holding
-	if (Settings::getSetting<bool>(Settings::Setting::OrignalControls)) {
-		updateOriginalControls();
-	} else {
-		updateFloodForgeControls();
-	}
+	bool origControls = Settings::getSetting<bool>(Settings::Setting::OrignalControls);
+	updateControls(origControls);
+	
 
 	if (!Popups::popups.empty()) return;
 

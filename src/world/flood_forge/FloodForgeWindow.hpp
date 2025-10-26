@@ -15,9 +15,7 @@ namespace FloodForgeWindow {
 
 	void updateCamera();
 
-	void updateOriginalControls();
-
-	void updateFloodForgeControls();
+	void updateControls(bool originalControls);
 
 	void updateMain();
 
