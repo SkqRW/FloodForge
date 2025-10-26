@@ -29,7 +29,7 @@ namespace EditorState {
 
 	Region region;
 
-	int selectingState = 0;
+	SelectingState selectingState = SelectingState::None;
 	Room *roomPossibleSelect = nullptr;
 	std::set<Room*> selectedRooms;
 

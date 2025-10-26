@@ -16,6 +16,15 @@
 #define ROOM_SNAP_NONE 0
 #define ROOM_SNAP_TILE 1
 
+enum class SelectingState {
+    None = 0,          
+    AreaSelection = 1, 
+    IsThisEvenUsed = 2,
+    RoomClicked = 3, 
+    DraggingRoom = 4,   
+    CameraPan = 5  
+};
+
 
 
 extern std::string ROOM_TAGS[ROOM_TAG_COUNT];
@@ -52,7 +61,7 @@ namespace EditorState {
 
 	extern Region region;
 
-	extern int selectingState;
+	extern SelectingState selectingState;
 	extern std::set<Room*> selectedRooms;
 	extern Room *roomPossibleSelect;
 

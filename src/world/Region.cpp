@@ -24,6 +24,6 @@ void Region::reset() {
 	acronym = "";
 	EditorState::selectedRooms.clear();
 	EditorState::roomPossibleSelect = nullptr;
-	EditorState::selectingState = 0;
+	EditorState::selectingState = SelectingState::None;
 	overrideSubregionColors.clear();
 }
