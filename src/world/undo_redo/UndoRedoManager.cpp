@@ -40,7 +40,7 @@ namespace UndoRedo {
 	bool UndoRedoManager::undo() {
 		if (undoDeque.empty()) {
 			if (debugMode) {
-				   Logger::warn("[UndoRedo] No actions to undo");
+				Logger::warn("[UndoRedo] No actions to undo");
 			}
 			return false;
 		}
@@ -73,7 +73,7 @@ namespace UndoRedo {
 	bool UndoRedoManager::redo() {
 		if (redoStack.empty()) {
 			if (debugMode) {
-				   Logger::warn("[UndoRedo] No actions to redo");
+				Logger::warn("[UndoRedo] No actions to redo");
 			}
 			return false;
 		}
@@ -108,7 +108,7 @@ namespace UndoRedo {
 		redoStack = {};
 		
 		if (debugMode) {
-			   Logger::info("[UndoRedo] All stacks cleared");
+			Logger::info("[UndoRedo] All stacks cleared");
 		}
 	}
 
@@ -126,14 +126,14 @@ namespace UndoRedo {
 	void init() {
 		manager.clear();
 		if (debugMode) {
-			   Logger::info("[UndoRedo] System initialized");
+			Logger::info("[UndoRedo] System initialized");
 		}
 	}
 
 	void cleanup() {
 		manager.clear();
 		if (debugMode) {
-			   Logger::info("[UndoRedo] System cleaned up");
+			Logger::info("[UndoRedo] System cleaned up");
 		}
 	}
 

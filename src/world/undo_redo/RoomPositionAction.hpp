@@ -20,30 +20,26 @@ namespace UndoRedo {
 		MoveRooms,
 	};
 
-	/**
-	 * Action for undoing/redoing room position changes
-	 * Stores the before and after states of room positions
-	 */
+
 	class RoomPositionAction : public IAction {
 	private:
 		std::map<Room*, RoomPositionData> beforeState;
 		std::map<Room*, RoomPositionData> afterState;
 		RoomPositionActionType actionType;
 
-public:
-	RoomPositionAction(
-		const std::map<Room*, RoomPositionData>& before,
-		const std::map<Room*, RoomPositionData>& after,
-		RoomPositionActionType type
-	);
+	public:
+		RoomPositionAction(
+			const std::map<Room*, RoomPositionData>& before,
+			const std::map<Room*, RoomPositionData>& after,
+			RoomPositionActionType type
+		);
 
-	void undo() override;
-	void redo() override;
-	std::string getDescription() const override;
-	std::string toString() const override { return "RoomPosition"; }
-};
+		void undo() override;
+		void redo() override;
+		std::string getDescription() const override;
+		std::string toString() const override { return "RoomPosition"; }
+	};
 
-	// Put the action onto the undo stack
 	void pushRoomPositionSnapshot(
 		const std::map<Room*, RoomPositionData>& beforePositions,
 		const std::map<Room*, RoomPositionData>& afterPositions,

@@ -10,6 +10,7 @@
 #include "DebugData.hpp"
 #include "../undo_redo/UndoRedoManager.hpp"
 #include "../undo_redo/RoomPositionAction.hpp"
+#include "../undo_redo/ConnectionAction.hpp"
 
 #include "../../popup/MarkdownPopup.hpp"
 #include "../../popup/ConfirmPopup.hpp"
@@ -435,14 +436,11 @@ void FloodForgeWindow::updateMain() {
 		Popups::addPopup(new MarkdownPopup(BASE_PATH / "docs" / "controls.md"));
 	}
 
-	// Undo/Redo para la posición de las rooms
-	// TODO: Reval if i should move this into a more general funtion, later, i'm tired as saint pass ascencion
+	// Undo/Redo
 	if (UI::window->modifierPressed(GLFW_MOD_CONTROL)) {
 		if (UI::window->modifierPressed(GLFW_MOD_SHIFT) && UI::window->justPressed(GLFW_KEY_Z)) {
-			// Ctrl+Shift+Z: Redo
 			UndoRedo::redo();
 		} else if (UI::window->justPressed(GLFW_KEY_Z)) {
-			// Ctrl+Z: Undo
 			UndoRedo::undo();
 		}
 	}
@@ -535,6 +533,8 @@ void FloodForgeWindow::updateMain() {
 				EditorState::connections.push_back(currentConnection);
 				currentConnection->roomA->connect(currentConnection);
 				currentConnection->roomB->connect(currentConnection);
+
+				UndoRedo::pushConnectionSnapshot(currentConnection, UndoRedo::ConnectionActionType::Connect);
 			} else {
 				delete currentConnection;
 			}
@@ -580,14 +580,15 @@ void FloodForgeWindow::updateMain() {
 
 			if (connection->hovered(worldMouse, EditorState::lineSize)) {
 				EditorState::connections.erase(std::remove(EditorState::connections.begin(), EditorState::connections.end(), connection), EditorState::connections.end());
-
+				
 				connection->roomA->disconnect(connection);
 				connection->roomB->disconnect(connection);
 
+				UndoRedo::pushConnectionSnapshot(connection, UndoRedo::ConnectionActionType::Disconnect);
+
 				delete connection;
-
 				deleted = true;
-
+				
 				break;
 			}
 		}
